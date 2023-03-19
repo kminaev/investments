@@ -211,39 +211,39 @@ def _show_trades_report(trades: pandas.DataFrame, year: int, verbose: bool):
     print('\n\n')
 
 
-def show_portfolio_report(portfolio: List[PortfolioElement]):
-    _show_header('PORTFOLIO')
-    for elem in portfolio:
-        print(f'{elem.ticker}\tx\t{elem.quantity}')
-    print('\n\n')
+# def show_portfolio_report(portfolio: List[PortfolioElement]):
+#     _show_header('PORTFOLIO')
+#     for elem in portfolio:
+#         print(f'{elem.ticker}\tx\t{elem.quantity}')
+#     print('\n\n')
 
 
-def show_report(trades: Optional[pandas.DataFrame], dividends: Optional[pandas.DataFrame],
-                fees: Optional[pandas.DataFrame], interests: Optional[pandas.DataFrame],
-                filter_years: List[int], verbose: bool):  # noqa: WPS318,WPS319
-    years = set()
-    for report in (trades, dividends, fees, interests):
-        if report is not None:
-            years |= set(report['tax_year'].unique())
+# def show_report(trades: Optional[pandas.DataFrame], dividends: Optional[pandas.DataFrame],
+#                 fees: Optional[pandas.DataFrame], interests: Optional[pandas.DataFrame],
+#                 filter_years: List[int], verbose: bool):  # noqa: WPS318,WPS319
+#     years = set()
+#     for report in (trades, dividends, fees, interests):
+#         if report is not None:
+#             years |= set(report['tax_year'].unique())
 
-    for year in years:  # noqa: WPS426
-        if filter_years and (year not in filter_years):
-            continue
-        print('\n', '______' * 8, f'  {year}  ', '______' * 8, '\n')
+#     for year in years:  # noqa: WPS426
+#         if filter_years and (year not in filter_years):
+#             continue
+#         print('\n', '______' * 8, f'  {year}  ', '______' * 8, '\n')
 
-        if dividends is not None:
-            _show_dividends_report(dividends, year, verbose)
+#         if dividends is not None:
+#             _show_dividends_report(dividends, year, verbose)
 
-        if trades is not None:
-            _show_trades_report(trades, year, verbose)
+#         if trades is not None:
+#             _show_trades_report(trades, year, verbose)
 
-        if fees is not None:
-            _show_fees_report(fees, year, verbose)
+#         if fees is not None:
+#             _show_fees_report(fees, year, verbose)
 
-        if interests is not None:
-            _show_interests_report(interests, year, verbose)
+#         if interests is not None:
+#             _show_interests_report(interests, year, verbose)
 
-        print('______' * 8, f'EOF {year}', '______' * 8, '\n\n\n')
+#         print('______' * 8, f'EOF {year}', '______' * 8, '\n\n\n')
 
 
 def csvs_in_dir(directory: str):
