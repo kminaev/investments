@@ -1,7 +1,6 @@
 from enum import Enum
 from typing import NamedTuple
 
-
 class TickerKind(Enum):
     Stock = 1
     Option = 2

@@ -77,10 +77,16 @@ def prepare_dividends_report(dividends: List[Dividend], cbr_client_usd: cbr.Exch
 
     df['tax_year'] = df[operation_date_column].map(lambda x: x.year)
     df['rate'] = df.apply(lambda x: cbr_client_usd.get_rate(x['amount'].currency, x[operation_date_column]), axis=1)
+    df['currency_code'] = df.apply(lambda x: cbr_client_usd.get_iso_numeric_code(x['amount'].currency), axis=1)
     df['amount_rub'] = df.apply(lambda x: cbr_client_usd.convert_to_rub(x['amount'], x[operation_date_column]), axis=1)
     df['tax_paid_rub'] = df.apply(lambda x: cbr_client_usd.convert_to_rub(x['tax_paid'], x[operation_date_column]), axis=1)
+    df['amount_decimal'] = df.apply(lambda x: round(x['amount'].amount,2), axis=1)
+    df['tax_paid_decimal'] = df.apply(lambda x: round(x['tax_paid'].amount,2), axis=1)
     df['tax_rate'] = df.apply(lambda x: round(x['tax_paid'].amount * 100 / x['amount'].amount, 2), axis=1)
 
+    #EMB {TAB} 840 {TAB} {ENTER} {TAB} 08072020 {TAB} 08072020 {TAB} {LEFT} 840 {TAB} {TAB} {SPACE} {TAB} {ENTER} 1010 {TAB} {ENTER} {TAB} 9,89 {TAB} 0,99 {TAB} {DOWN}
+    #df['key_stroke'] = df.apply(lambda x: f'{x.ticker.symbol} {{TAB}} {x.currency_code} {{TAB}} {{ENTER}} {{TAB}} {x.date.strftime("%d%m%Y")} {{TAB}} {x.date.strftime("%d%m%Y")} {{TAB}} {{LEFT}} {x.currency_code} {{TAB}} {{TAB}} {{SPACE}} {{TAB}} {{ENTER}} 1010 {{TAB}} {{ENTER}} {{TAB}} {x.amount_decimal} {{TAB}} {x.tax_paid_decimal} {{TAB}} {{DOWN}}', axis=1)
+    df['key_stroke'] = df.apply(lambda x: f'Interactive {{SPACE}} Brokers {{SPACE}} LLC {{SPACE}} +9({x.ticker.symbol})+0 {{TAB}} {{TAB}} {{TAB}} {{ENTER}} {{DOWN}} {{DOWN}} {{DOWN}} {x.currency_code} {{TAB}} {{ENTER}} {{TAB}} {{TAB}} {{ENTER}} {{DOWN}} {{DOWN}} {{DOWN}} {x.currency_code} {{TAB}} {{ENTER}} {{TAB}} {{TAB}} {{ENTER}} {{TAB}} {x.date.strftime("%d%m%Y")} {{TAB}} {x.date.strftime("%d%m%Y")} {{TAB}} {{LEFT}} {x.currency_code} {{TAB}} {{TAB}} {{SPACE}} {{TAB}} {{ENTER}} 1010 {{TAB}} {{ENTER}} {{TAB}} {x.amount_decimal} {{TAB}} {x.tax_paid_decimal} {{TAB}} {{DOWN}}', axis=1)
     return df
 
 
@@ -164,7 +170,9 @@ def _show_dividends_report(dividends: pandas.DataFrame, year: int, verbose: bool
         dividends_presenter = dividends_presenter.drop(columns=['tax_rate'])
 
     _show_header('DIVIDENDS')
-    print(dividends_presenter.to_string())
+    #print(dividends_presenter.to_string())
+    print(dividends_presenter.to_csv(sep='\t'))
+    print(dividends_presenter.to_csv(".\\dividends.txt",sep='\t'))
     print('\n\n')
 
 

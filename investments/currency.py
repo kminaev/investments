@@ -30,6 +30,7 @@ class Currency(Enum):
     SEK = (('SEK',), '752', 'R01770')
     CHF = (('CHF',), '756', 'R01775')
     TRY = (('TRY',), '949', 'R01700J')
+    CNY = (('CNH','CNY'), '156', 'R01375')
 
     # unknown currency for cbr.ru
     # CNH = (('CNH',), 'unknown', 'unknown')

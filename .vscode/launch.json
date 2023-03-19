@@ -1,0 +1,39 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "poetry run ibdds",
+            "type": "python",
+            "request": "launch",
+            "module": "investments.ibdds.ibdds",
+            "args": [
+                "--activity-report-filepath",
+                "D:\\Yandex\\YandexDisk\\Документы\\Отчеты\\IB\\Activity\\2021-U4071034_U4071034_20210104_20211231_AS_Fv2_49ceb1b49369f6008f99af01a2dd09ae.csv"
+            ]
+        },
+        // {
+        //     "name": "Python: Модуль",
+        //     "type": "python",
+        //     "request": "launch",
+        //     "module": "poetry"
+        // },
+        {
+            "name": "poetry run ibtax",
+            "type": "python",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "module": "investments.ibtax.ibtax",
+            "args": [
+                "--activity-reports-dir",
+                "D:\\Yandex\\YandexDisk\\Документы\\Отчеты\\IB\\Activity",
+                "--confirmation-reports-dir",
+                "D:\\Yandex\\YandexDisk\\Документы\\Отчеты\\IB\\Confirmation"
+            ],
+            "console": "integratedTerminal"
+            //,"env": {"name":"value"}
+        }
+    ]
+}

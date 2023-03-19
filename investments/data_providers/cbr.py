@@ -28,6 +28,9 @@ class ExchangeRatesRUB:
         self._cache_dir = cache_dir
         self._frames_loaded = {}
 
+    def get_iso_numeric_code(self, currency: Currency) -> str:
+        return currency.iso_numeric_code
+
     def get_rate(self, currency: Currency, dt: datetime.datetime) -> Money:
         if currency is Currency.RUB:
             return Money(1, Currency.RUB)

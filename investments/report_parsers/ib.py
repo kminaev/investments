@@ -12,6 +12,7 @@ from investments.interests import Interest
 from investments.money import Money
 from investments.ticker import Ticker, TickerKind
 from investments.trade import Trade
+from investments.corporate_action import CorporateAction, CorporateActionKind
 
 
 def _parse_datetime(strval: str) -> datetime.datetime:
@@ -27,7 +28,7 @@ def _parse_trade_quantity(strval: str) -> int:
 
 
 def _parse_dividend_description(description: str) -> Tuple[str, str]:
-    m = re.match(r'^(\w+)\s*\(\w+\) (Cash Dividend|Payment in Lieu of Dividend|Choice Dividend)', description)
+    m = re.match(r'^([a-zA-Z0-9_.]+)\s*\(\w+\) (Cash Dividend|Payment in Lieu of Dividend|Choice Dividend)', description)
     if m is None:
         raise Exception(f'unsupported dividend description "{description}"')
     return m.group(1), m.group(2)
@@ -55,6 +56,21 @@ class NamedRowsParser:
         assert len(row) == len(self._fields), error_msg
         return {k: v for k, v in zip(self._fields, row)}
 
+class CorporateActionStorage:
+    def __init__(self):
+        self._corporate_actions = set()
+
+    def put(self, symbol: str, conid: str, description: str, kind: CorporateActionKind, params : Dict):        
+        corporate_action = CorporateAction(symbol, kind)
+        if corporate_action not in self._corporate_actions:
+            self._corporate_actions.add(corporate_action)
+
+    def get_corporate_action(self, symbol: str, kind: CorporateActionKind):
+        corporate_action = CorporateAction(symbol, kind)
+        if corporate_action in self._corporate_actions:
+            return corporate_action
+        return None
+
 
 class TickersStorage:
     def __init__(self):
@@ -65,25 +81,31 @@ class TickersStorage:
 
     def put(self, *, symbol: str, conid: str, description: str, kind: TickerKind, multiplier: int):
         ticker = Ticker(symbol, kind)
+        #print (ticker,description,conid)
         if ticker not in self._tickers:
-            assert conid not in self._conid_to_ticker
-            assert description not in self._description_to_ticker
-            assert ticker not in self._multipliers
+            #assert conid not in self._conid_to_ticker
+            #assert description not in self._description_to_ticker
+            #assert ticker not in self._multipliers
             self._tickers.add(ticker)
-            self._conid_to_ticker[conid] = ticker
-            self._description_to_ticker[description] = ticker
+            #self._conid_to_ticker[conid] = ticker
+            #self._description_to_ticker[description] = ticker
             self._multipliers[ticker] = multiplier
             return
 
-        assert self._conid_to_ticker[conid] == ticker
+        #assert self._conid_to_ticker[conid] == ticker
+        # conid_to_ticker = self._description_to_ticker.get(conid)
+        # if conid_to_ticker is not None:
+        #     self._conid_to_ticker[conid].append(ticker)
+        # else:            
+        #     self._conid_to_ticker[conid] = [ticker]
 
-        description_ticker = self._description_to_ticker.get(description)
-        if description_ticker is not None:
-            assert description_ticker == ticker
-        else:
-            self._description_to_ticker[description] = ticker
+        # description_ticker = self._description_to_ticker.get(description)
+        # if description_ticker is not None:
+        #     assert description_ticker == ticker
+        # else:
+        #     self._description_to_ticker[description] = ticker
 
-        assert self._multipliers[ticker] == multiplier
+        # assert self._multipliers[ticker] == multiplier
 
     def get_ticker(self, name: str, kind: TickerKind):
         ticker = Ticker(name, kind)
@@ -154,6 +176,7 @@ class InteractiveBrokersReportParser:
         self._deposits_and_withdrawals = []
         self._tickers = TickersStorage()
         self._settle_dates = SettleDatesStorage()
+        self._corporate_actions = CorporateActionStorage()
 
     def __repr__(self):
         return f'IbParser(trades={len(self.trades)}, dividends={len(self.dividends)}, fees={len(self.fees)}, interests={len(self.interests)})'  # noqa: WPS221
@@ -212,6 +235,8 @@ class InteractiveBrokersReportParser:
                     # 'Net Asset Value', 'Notes/Legal Notes', 'Open Positions', 'Realized & Unrealized Performance Summary',
                     # 'Statement', '\ufeffStatement', 'Total P/L for Statement Period', 'Transaction Fees',
                     'Cash Report': self._parse_cash_report,
+                    #Corporate Actions,Header,Asset Category,Currency,Report Date,Date/Time,Description,Quantity,Proceeds,Value,Realized P/L,Code
+                    'Corporate Actions': self._parse_corporate_actions
                 })
 
         # 4. sort
@@ -229,6 +254,9 @@ class InteractiveBrokersReportParser:
             if f['LevelOfDetail'] != 'EXECUTION':
                 continue
             if f['TransactionType'] == 'TradeCancel':
+                continue
+
+            if f['TransactionType'] == 'FracShare':
                 continue
 
             self._settle_dates.put(
@@ -282,7 +310,9 @@ class InteractiveBrokersReportParser:
         dt = _parse_datetime(f['Date/Time'])
 
         settle_date = self._settle_dates.get_date(ticker.symbol, dt)
-        assert settle_date is not None
+        if settle_date is None:
+            return
+        #assert settle_date is not None
 
         self._trades.append(Trade(
             ticker=ticker,
@@ -305,7 +335,7 @@ class InteractiveBrokersReportParser:
             # difference in reports for the same past year, but generated in different time
             # read more at https://github.com/cdump/investments/issues/17
             cash_choice_hack = (v.dtype == 'Cash Dividend' and div_type == 'Choice Dividend')
-
+            #print(i,v)
             if v.ticker == ticker and v.date == date and (v.dtype == div_type or cash_choice_hack):
                 assert v.amount.currency == tax_amount.currency
                 self._dividends[i] = Dividend(
@@ -319,7 +349,8 @@ class InteractiveBrokersReportParser:
                 break
 
         if not found:
-            raise Exception(f'dividend not found for {ticker} on {date}')
+            #raise Exception(f'dividend not found for {ticker} on {date}')
+            print(f'dividend not found for {ticker} on {date}')
 
     def _parse_dividends(self, f: Dict[str, str]):
         div_symbol, div_type = _parse_dividend_description(f['Description'])
@@ -376,3 +407,25 @@ class InteractiveBrokersReportParser:
             description = f['Currency Summary']
             amount = Money(f['Total'], currency)
             self._cash.append(Cash(description, amount))
+
+    def _parse_corporate_actions(self, f: Dict[str, str]):
+        #Corporate Actions,Header,Asset Category,Currency,Report Date,Date/Time,Description,Quantity,Proceeds,Value,Realized P/L,Code
+        if f['Asset Category']=='Stocks':
+            description = f['Description']
+            m = re.match(r'^([a-zA-Z0-9_.]+)\s*\(\w+\) (Tendered\s*to)\s*([a-zA-Z0-9_.]+)', description)
+            if m is not None:
+                logging.warning(f'Tendered found from {m.group(1)} to {m.group(3)} {f}')
+                ticker = self._tickers.get_ticker(m.group(1), TickerKind.Stock)
+                if ticker is not None:
+                    to_code = m.group(3)
+                    currency = Currency.parse(f['Currency'])
+                    date = _parse_date(f['Report Date'])
+                    description = f['Description']
+                    qty = f['Quantity']
+                    amount = Money(f['Value'], currency)
+                    #if self._corporate_actions.get_corporate_action(to_code, CorporateActionKind.TenderOddLots) is None:
+                    #    self._corporate_actions.put(to_code, m.group(1), description, CorporateActionKind.TenderOddLots)
+                return
+            #m = re.match(r'^([a-zA-Z0-9_.]+)\s*\(\w+\) (Tendered\s*to)\s*([a-zA-Z0-9_.]+)', description)                
+            
+            
