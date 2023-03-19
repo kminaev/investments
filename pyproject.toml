@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "investments"
-version = "0.1.26"
+version = "0.1.27"
 description = "Analysis of Interactive Brokers reports for tax reporting in Russia"
 license = "MIT"
 authors = ["Maxim Andreev <andreevmaxim@gmail.com>"]
@@ -25,6 +25,7 @@ pandas = "^1.3.5"
 requests = "^2.27.1"
 tabulate = "^0.8.9"
 aiomoex = "^2.0.0"
+WeasyPrint = "^52.4"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"
